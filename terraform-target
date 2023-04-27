@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+
+_mktemp() {
+    prefix="$1"
+    shift
+
+    if [ "$RUNTIME_SHORTNAME" = "osx" ]; then
+        command mktemp -t "$prefix" "$@"
+    else
+        command mktemp "$@" 2>/dev/null
+    fi
+}
+
+check_requirements() {
+    for c in awk cat fzf mktemp; do
+        if ! command -v "${c}" >/dev/null 2>&1; then
+            echo "command not found: ${c}" >&2
+            exit 1
+        fi
+    done
+    echo "All requirements are met"
+}
+
+preview() {
+    terraform_plan_text_output_filename="$1"
+    terraform_change_name="$2"
+
+    echo "File: ${terraform_plan_text_output_filename}"
+    echo "Change: ${terraform_change_name}"
+
+    cat "$terraform_plan_text_output_filename" |
+        awk -v change_name="$terraform_change_name" '
+            BEGIN {
+                gsub(/\[/, "\\\[", change_name)
+                re = ".+# " change_name ".+ (must|will) be .+"
+            }
+            f;
+            $0 ~ re { f = 1 }
+            /^    \}$/ { f = 0 }
+        '
+}
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 command options"
+    exit 1
+fi
+
+cmd="$1"
+shift
+"$cmd" "$@"
