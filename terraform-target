@@ -4,10 +4,6 @@ set -euo pipefail
 
 : "${TERRAFORM_BINARY=terraform}"
 
-_mktemp() {
-    mktemp "$@" 2>/dev/null || mktemp -t "$prefix" "$@"
-}
-
 check_requirements() {
     for c in awk cat fzf mktemp; do
         if ! command -v "${c}" >/dev/null 2>&1; then
@@ -35,7 +31,7 @@ preview() {
 
 apply() {
     local terraform_plan_output
-    terraform_plan_output="$(_mktemp terraform-plan-output.XXXXXX)"
+    terraform_plan_output="$(mktemp -t terraform-plan-output.XXXXXX)"
     $TERRAFORM_BINARY plan "$@" | tee "$terraform_plan_output"
 
     local terraform_change_selector='^ \[1m  # .+ (must|will) be .+$'
@@ -62,8 +58,8 @@ apply() {
         terraform_params+=("-target=$t")
     done
 
-    if [ -z "${TERRAFORM_PARTIAL_APPLY_TARGET_FILE}" ]; then
-        TERRAFORM_PARTIAL_APPLY_TARGET_FILE=$(_mktemp -t "tf-partial-apply-target") || return 1
+    if [ -z "${TERRAFORM_PARTIAL_APPLY_TARGET_FILE+x}" ]; then
+        TERRAFORM_PARTIAL_APPLY_TARGET_FILE=$(mktemp -t tf-partial-apply-target.XXXXXX) || return 1
         export TERRAFORM_PARTIAL_APPLY_TARGET_FILE
     fi
     echo "${terraform_params[@]}" >"$TERRAFORM_PARTIAL_APPLY_TARGET_FILE"
