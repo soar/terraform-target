@@ -1,13 +1,11 @@
 setup() {
-  SCRIPT="./terraform-target"
-
   . ./tests/_setup.sh
 }
 
 @test "check terraform version" {
     [ -z $TERRAFORM_VERSION ] && exit 1
     run terraform -version
-    assert_output --partial "Terraform v${TERRAFORM_VERSION}"
+    assert_line --index 0 "Terraform v${TERRAFORM_VERSION}"
 }
 
 @test "can check-requirements" {

@@ -4,6 +4,14 @@ set -euo pipefail
 
 : "${TERRAFORM_BINARY=terraform}"
 
+_awk() {
+    if command -v gawk >/dev/null 2>&1; then
+        gawk "$@" 2>/dev/null
+    else
+        awk "$@"
+    fi
+}
+
 check_requirements() {
     for c in awk cat fzf mktemp; do
         if ! command -v "${c}" >/dev/null 2>&1; then
@@ -18,7 +26,7 @@ preview() {
     terraform_plan_text_output_filename="$1"
     terraform_change_name="$2"
 
-    awk -v change_name="$terraform_change_name" '
+    _awk -v change_name="$terraform_change_name" '
         BEGIN {
             gsub(/\[/, "\\\[", change_name)
             re = ".{0,4}# " change_name ".{0,5}(must|will) be .+"
