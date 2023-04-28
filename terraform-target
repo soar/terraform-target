@@ -1,14 +1,11 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+: "${TERRAFORM_BINARY=terraform}"
 
 _mktemp() {
-    prefix="$1"
-    shift
-
-    if [ "$RUNTIME_SHORTNAME" = "osx" ]; then
-        command mktemp -t "$prefix" "$@"
-    else
-        command mktemp "$@" 2>/dev/null
-    fi
+    mktemp "$@" 2>/dev/null || mktemp -t "$prefix" "$@"
 }
 
 check_requirements() {
@@ -28,16 +25,66 @@ preview() {
     echo "File: ${terraform_plan_text_output_filename}"
     echo "Change: ${terraform_change_name}"
 
-    cat "$terraform_plan_text_output_filename" |
-        awk -v change_name="$terraform_change_name" '
-            BEGIN {
-                gsub(/\[/, "\\\[", change_name)
-                re = ".+# " change_name ".+ (must|will) be .+"
-            }
-            f;
-            $0 ~ re { f = 1 }
-            /^    \}$/ { f = 0 }
-        '
+    awk -v change_name="$terraform_change_name" '
+        BEGIN {
+            gsub(/\[/, "\\\[", change_name)
+            re = ".{0,4}# " change_name ".{0,5}(must|will) be .+"
+        }
+        f;
+        $0 ~ re { print $0; f = 1 }
+        /^    \}$/ { f = 0 }
+    ' <"$terraform_plan_text_output_filename"
+}
+
+apply() {
+    local terraform_plan_output
+    terraform_plan_output="$(_mktemp terraform-plan-output.XXXXXX)"
+    $TERRAFORM_BINARY plan "$@" | tee "$terraform_plan_output"
+
+    local terraform_change_selector='^ \[1m  # .+ (must|will) be .+ \[0m$'
+    local selected_changes
+
+    # shellcheck disable=SC2207
+    selected_changes=($(
+        cat "$terraform_plan_output" |
+            sed 's/\x1b/ /g' |
+            sed 's/\t/ /g' |
+            grep -oE "$terraform_change_selector" |
+            awk '{ print $3 }' |
+            fzf --multi \
+                --preview "$0 preview '$terraform_plan_output' {}"
+    ))
+    selected=$?
+    rm "$terraform_plan_output"
+    [ $selected -eq 0 ] || exit $selected
+
+    echo "Selected changes:"
+    local terraform_params=()
+    for t in "${selected_changes[@]}"; do
+        echo " - $t"
+        terraform_params+=("-target=$t")
+    done
+
+    if [ -z "${TERRAFORM_PARTIAL_APPLY_TARGET_FILE}" ]; then
+        TERRAFORM_PARTIAL_APPLY_TARGET_FILE=$(_mktemp -t "tf-partial-apply-target") || return 1
+        export TERRAFORM_PARTIAL_APPLY_TARGET_FILE
+    fi
+    echo "${terraform_params[@]}" >"$TERRAFORM_PARTIAL_APPLY_TARGET_FILE"
+
+    $TERRAFORM_BINARY apply "${terraform_params[@]}" "$@"
+}
+
+apply_repeat() {
+    if [ -z "$TERRAFORM_PARTIAL_APPLY_TARGET_FILE" ]; then
+        echo "Terraform targets are not set, run '$0 apply' fist"
+        exit 1
+    elif [ ! -f "$TERRAFORM_PARTIAL_APPLY_TARGET_FILE" ]; then
+        echo "File '$TERRAFORM_PARTIAL_APPLY_TARGET_FILE' doesn't exist, run '$0 apply' again"
+        exit 1
+    else
+        # shellcheck disable=SC2046
+        "$TERRAFORM_BINARY" apply $(cat "$TERRAFORM_PARTIAL_APPLY_TARGET_FILE") "$@"
+    fi
 }
 
 if [ $# -lt 1 ]; then
@@ -45,6 +92,6 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-cmd="$1"
+cmd="$(printf '%s' "$1" | tr '-' '_')"
 shift
 "$cmd" "$@"
