@@ -1,3 +1,8 @@
+variable "sample_resource_name" {
+  type = string
+  default = "sample"
+}
+
 locals {
   sample_count = 3
   sample_list = ["one", "two", "three"]
@@ -5,7 +10,7 @@ locals {
 
 resource "null_resource" "sample_resource" {
   triggers = {
-    name = "sample"
+    name = var.sample_resource_name
   }
 }
 
