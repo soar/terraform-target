@@ -20,10 +20,11 @@ jobs:
         terraform_version:
           - 1.3.9
           - 1.4.6
+    env:
+      TERRAFORM_VERSION: ${{ matrix.terraform_version }}
     steps:
       - uses: actions/checkout@main
       - run: |
-          TERRAFORM_VERSION="${{ matrix.terraform_version }}"
           TERRAFORM_URL="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
           curl -s "${TERRAFORM_URL}" --output "terraform-$TERRAFORM_VERSION.zip"
           sudo unzip -q "terraform-$TERRAFORM_VERSION.zip" -d /bin
