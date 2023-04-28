@@ -37,6 +37,33 @@ preview() {
     ' <"$terraform_plan_text_output_filename"
 }
 
+_action_on_state_targets() {
+    local terraform_command="$1"
+    shift
+    local target_keywords=(${1//,/ })
+    shift
+
+    terraform state list || exit 1
+
+    local selected_terraform_resources
+    # shellcheck disable=SC2207,SC2002
+    selected_terraform_resources=($(
+        terraform state list |
+            fzf --multi --preview "terraform state show {}"
+    ))
+
+    echo "Selected resources:"
+    local terraform_params=()
+    for t in "${selected_terraform_resources[@]}"; do
+        echo " - $t"
+        for k in "${target_keywords[@]}"; do
+            terraform_params+=("-$k=$t")
+        done
+    done
+
+    terraform "$terraform_command" "${terraform_params[@]}"
+}
+
 apply() {
     local terraform_plan_output
     terraform_plan_output="$(mktemp -t terraform-plan-output.XXXXXX)"
@@ -88,22 +115,12 @@ apply_repeat() {
     fi
 }
 
+replace() {
+    _action_on_state_targets apply target,replace
+}
+
 destroy() {
-    local terraform_resources_to_destroy
-    # shellcheck disable=SC2207,SC2002
-    terraform_resources_to_destroy=($(
-        terraform state list |
-            fzf --multi --preview "terraform state show {}"
-    ))
-
-    echo "Selected resources:"
-    local terraform_params=()
-    for t in "${terraform_resources_to_destroy[@]}"; do
-        echo " - $t"
-        terraform_params+=("-target=$t")
-    done
-
-    terraform destroy "${terraform_params[@]}"
+    _action_on_state_targets destroy target
 }
 
 if [ $# -lt 1 ]; then

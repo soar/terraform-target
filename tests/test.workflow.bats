@@ -8,6 +8,12 @@ setup() {
     assert_failure 1
 }
 
+@test "fail state-related commands if no state available" {
+    run $SCRIPT replace
+    assert_output --regexp ".*No state file was found!.*"
+    assert_failure 1
+}
+
 @test "can apply changes" {
     run $SCRIPT apply
     assert_success
@@ -38,6 +44,24 @@ setup() {
     run bash -c 'terraform state list | wc -l | tr -d " "'
     assert_success
     assert_output "2"
+}
+
+@test "can replace resources" {
+    run $SCRIPT replace
+    assert_success
+    assert_output --regexp "will be .*replaced.*, as requested"
+    assert_output --partial "1 to add, 0 to change, 1 to destroy."
+    assert_output --partial "Applied changes may be incomplete"
+    assert_output --partial "Apply complete! Resources: 1 added, 0 changed, 1 destroyed."
+}
+
+@test "can pass variables" {
+    run $SCRIPT apply -var "sample_resource_name=can-pass-variable-test"
+    assert_success
+    assert_output --regexp '"name" = "sample".+->.+"can-pass-variable-test"'
+    assert_output --partial "1 to add, 0 to change, 1 to destroy."
+    assert_output --partial "Applied changes may be incomplete"
+    assert_output --partial "Apply complete! Resources: 1 added, 0 changed, 1 destroyed."
 }
 
 @test "can destroy resources" {
