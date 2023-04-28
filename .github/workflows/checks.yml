@@ -16,6 +16,7 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1
       matrix:
         terraform_version:
           - 1.0.11
