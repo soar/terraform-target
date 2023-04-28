@@ -76,7 +76,7 @@ apply() {
 }
 
 apply_repeat() {
-    if [ -z "$TERRAFORM_PARTIAL_APPLY_TARGET_FILE" ]; then
+    if [ -z "${TERRAFORM_PARTIAL_APPLY_TARGET_FILE+x}" ]; then
         echo "Terraform targets are not set, run '$0 apply' fist"
         exit 1
     elif [ ! -f "$TERRAFORM_PARTIAL_APPLY_TARGET_FILE" ]; then
