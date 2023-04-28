@@ -22,9 +22,6 @@ preview() {
     terraform_plan_text_output_filename="$1"
     terraform_change_name="$2"
 
-    echo "File: ${terraform_plan_text_output_filename}"
-    echo "Change: ${terraform_change_name}"
-
     awk -v change_name="$terraform_change_name" '
         BEGIN {
             gsub(/\[/, "\\\[", change_name)
@@ -41,7 +38,7 @@ apply() {
     terraform_plan_output="$(_mktemp terraform-plan-output.XXXXXX)"
     $TERRAFORM_BINARY plan "$@" | tee "$terraform_plan_output"
 
-    local terraform_change_selector='^ \[1m  # .+ (must|will) be .+ \[0m$'
+    local terraform_change_selector='^ \[1m  # .+ (must|will) be .+$'
     local selected_changes
 
     # shellcheck disable=SC2207
