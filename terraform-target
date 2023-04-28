@@ -40,6 +40,7 @@ preview() {
 _action_on_state_targets() {
     local terraform_command="$1"
     shift
+    # shellcheck disable=SC2206
     local target_keywords=(${1//,/ })
     shift
 
