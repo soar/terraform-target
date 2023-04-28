@@ -27,7 +27,7 @@ jobs:
       - run: |
           TERRAFORM_URL="https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip"
           curl -s "${TERRAFORM_URL}" --output "terraform-$TERRAFORM_VERSION.zip"
-          sudo unzip -q "terraform-$TERRAFORM_VERSION.zip" -d /bin
+          sudo unzip -q "terraform-$TERRAFORM_VERSION.zip" -d ./tests
       - run: |
           git submodule add https://github.com/bats-core/bats-core.git test/bats
           git submodule add https://github.com/bats-core/bats-support.git test/test_helper/bats-support

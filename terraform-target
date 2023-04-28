@@ -37,7 +37,7 @@ apply() {
     local terraform_change_selector='^ \[1m  # .+ (must|will) be .+$'
     local selected_changes
 
-    # shellcheck disable=SC2207
+    # shellcheck disable=SC2207,SC2002
     selected_changes=($(
         cat "$terraform_plan_output" |
             sed 's/\x1b/ /g' |
