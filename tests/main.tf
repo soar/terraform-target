@@ -3,7 +3,11 @@ locals {
   sample_list = ["one", "two", "three"]
 }
 
-resource "null_resource" "sample_resource" {}
+resource "null_resource" "sample_resource" {
+  triggers = {
+    name = "sample"
+  }
+}
 
 resource "null_resource" "sample_resource_with_count" {
   count = local.sample_count

@@ -1,3 +1,4 @@
 /tests/.terraform/
 /tests/.terraform.lock.hcl
 /tests/.terraform-version
+/tests/terraform.tfstate

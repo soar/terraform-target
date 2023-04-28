@@ -88,6 +88,24 @@ apply_repeat() {
     fi
 }
 
+destroy() {
+    local terraform_resources_to_destroy
+    # shellcheck disable=SC2207,SC2002
+    terraform_resources_to_destroy=($(
+        terraform state list |
+            fzf --multi --preview "terraform state show {}"
+    ))
+
+    echo "Selected resources:"
+    local terraform_params=()
+    for t in "${terraform_resources_to_destroy[@]}"; do
+        echo " - $t"
+        terraform_params+=("-target=$t")
+    done
+
+    terraform destroy "${terraform_params[@]}"
+}
+
 if [ $# -lt 1 ]; then
     echo "Usage: $0 command options"
     exit 1
