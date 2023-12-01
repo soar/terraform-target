@@ -62,7 +62,7 @@ _action_on_state_targets() {
         done
     done
 
-    $TERRAFORM_BINARY "$terraform_command" "${terraform_params[@]}"
+    $TERRAFORM_BINARY "$terraform_command" "${terraform_params[@]}" "$@"
 }
 
 apply() {
